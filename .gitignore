@@ -1,0 +1,6 @@
+.DS_Store
+tools/mkbootimg/mkbootimg
+tools/mkbootimg/*.tmp
+tools/mkbootimg/*.o
+*.swp
+build
