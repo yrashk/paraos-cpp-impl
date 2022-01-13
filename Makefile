@@ -1,4 +1,7 @@
-CXX ?= c++
+# By default, don't build a release
+RELEASE ?= false
+
+CXX = clang++
 
 uname_s := $(shell uname -s)
 ifeq ($(uname_s),Darwin)
@@ -10,20 +13,44 @@ endif
 QEMU_PARAMS = -cpu max -serial stdio -smp 2
 
 CXX_FLAGS += -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
-	     -fpic -fno-stack-protector -mno-red-zone --std=c++20
+	     -fpic -fno-stack-protector -mno-red-zone --std=c++20 \
+	     -I libpara
+
+ifeq ($(RELEASE),false)
+  CXX_FLAGS += -g
+endif
+
+ifeq ($(RELEASE),true)
+  CXX_FLAGS += -DRELEASE
+endif
 
 build = build
-kernel_sources = $(wildcard kernel/*.cpp)
+
+kernel_sources = kernel/bootboot.cpp kernel/cxx.cpp
 kernel_objects = $(patsubst %.cpp,$(build)/%.o,$(kernel_sources))
+
+libkernel_sources = kernel/devices/serial.cpp \
+	kernel/platform.cpp \
+	kernel/platform/x86_64.cpp kernel/platform/x86_64/port.cpp kernel/platform/x86_64/serial.cpp \
+	kernel/testing.cpp kernel/main.cpp
+libkernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libkernel_sources))))
+
+libpara_sources = libpara/testing.cpp libpara/basic_types.cpp libpara/xxh64.cpp libpara/err.cpp
+libpara_headers = $(wildcard libpara/*.hpp)
+libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
 
 all: $(build)/boot.img
 
-$(build)/paraos: $(kernel_objects) $(kernel_sources) kernel/bootboot.ld Makefile
-	$(CXX_LD) $< -T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib 
+check:
+	@echo $(libkernel_pcms)
 
-$(build)/%.o: %.cpp $(kernel_sources) Makefile
+$(build)/paraos: $(kernel_objects) $(kernel_sources) kernel/bootboot.ld Makefile
+	$(CXX_LD) $(kernel_objects) -T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib
+
+$(build)/%.o: %.cpp Makefile $(libpara_pcms) $(libkernel_pcms) $(libpara_headers)
 	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) \
+	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
 $(build)/boot.img: $(build)/paraos tools/mkbootimg/mkbootimg boot.config bootimage.json
 	tools/mkbootimg/mkbootimg check $<
@@ -42,3 +69,15 @@ qemu-gdb: $(build)/boot.img
 clean:
 	rm -rf $(build)
 	$(MAKE) -C tools/mkbootimg clean
+
+.SECONDEXPANSION:
+
+$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp Makefile $(libpara_pcms) $(libpara_sources) $(libpara_headers)
+	@mkdir -p $(dir $@)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
+	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
+
+$(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
+	@mkdir -p $(dir $@)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
+	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
