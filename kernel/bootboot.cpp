@@ -9,7 +9,7 @@ struct Bootboot {
 
   static const auto bspid = 0x0c;
 
-  short bootstrapCPU() {
+  u16 bootstrapCPU() {
     return *reinterpret_cast<u16 *>(reinterpret_cast<u8 *>(this) + bspid);
   }
 
