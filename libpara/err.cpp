@@ -79,11 +79,11 @@ template <typename T> struct Result {
   /**
    * Initialize as a success
    */
-  Result(T value) : result({.value = value}), success(true) {}
+  Result(T value) : result{.value = value}, success(true) {}
   /**
    * Initialize as an error
    */
-  Result(Error error) : result({.error = error}), success(false) {}
+  Result(Error error) : result{.error = error}, success(false) {}
 
   /**
    * Get result if success, undefined if it isn't
