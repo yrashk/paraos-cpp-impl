@@ -79,7 +79,7 @@ template <typename T> struct Result {
   /**
    * Initialize as a success
    */
-  Result(T value) : result{.value = value}, success(true) {}
+  Result(T &&value) : result{.value = static_cast<T>(value)}, success(true) {}
   /**
    * Initialize as an error
    */
