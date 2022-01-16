@@ -39,7 +39,7 @@ public:
     return nullptr;
   }
 
-  virtual void write(u8 b) {
+  virtual void write(const u8 b) {
     while (!isTransmitEmpty()) {
     }
     port.out(0, b);

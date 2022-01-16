@@ -56,6 +56,8 @@ public:
       serial_port.write("\n");
     }
   };
+
+  virtual void write(const char *s) { serial_port.write(s); }
 };
 
 } // namespace kernel::testing

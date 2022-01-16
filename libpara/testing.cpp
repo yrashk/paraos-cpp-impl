@@ -1,5 +1,8 @@
 export module libpara.testing;
 
+import libpara.formatting;
+using namespace libpara::formatting;
+
 export namespace libpara::testing {
 
 class TestCaseSink {
@@ -9,6 +12,7 @@ public:
   virtual void testComplete(){};
   virtual void report(bool success, const char *message = "",
                       const char *file = nullptr, const char *line = nullptr) {}
+  virtual void write(const char *s) {}
 };
 
 class TestCase {
@@ -30,6 +34,11 @@ public:
   void assert(bool success, const char *message = "",
               const char *file = nullptr, const char *line = nullptr) {
     sink.report(success, message, file, line);
+  }
+
+  template <typename... Ts> void print(Ts... args) { format(sink, args...); }
+  template <typename... Ts> void println(Ts... args) {
+    format(sink, args..., "\n");
   }
 };
 
