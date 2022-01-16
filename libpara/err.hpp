@@ -1,5 +1,3 @@
-#pragma once
-
 #define tryUnwrap(e)                                                           \
   ({                                                                           \
     auto v = e;                                                                \

@@ -1,5 +1,3 @@
-#pragma once
-
 #define _S(x) #x
 #define _S_(x) _S(x)
 #define _S__LINE__ _S_(__LINE__)

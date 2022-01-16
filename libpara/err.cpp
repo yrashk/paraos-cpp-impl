@@ -83,8 +83,8 @@ template <typename T> struct Result {
   /**
    * Initialize as a success from an rvalue
    */
-
   Result(T &&value) : result{.value = static_cast<T>(value)}, success(true) {}
+
   /**
    * Initialize as an error
    */

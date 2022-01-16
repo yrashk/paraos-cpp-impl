@@ -12,7 +12,7 @@ class SerialPort {
 
 public:
   virtual Result<nullptr_t> initialize() = 0;
-  virtual void write(u8 b) = 0;
+  virtual void write(const u8 b) = 0;
 
   virtual void write(const char *str) {
     auto i = 0;
