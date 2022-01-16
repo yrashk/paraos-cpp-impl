@@ -77,8 +77,13 @@ template <typename T> struct Result {
   bool success;
 
   /**
-   * Initialize as a success
+   * Initialize as a success from an lvalue
    */
+  Result(T &value) : result{.value = value}, success(true) {}
+  /**
+   * Initialize as a success from an rvalue
+   */
+
   Result(T &&value) : result{.value = static_cast<T>(value)}, success(true) {}
   /**
    * Initialize as an error
@@ -154,6 +159,12 @@ public:
       Assert(!r1.success);
       Assert(r1 == Error("e"));
       Assert(r1.error() == Error("e"));
+
+      int val = 1;
+      Result<int> r2(val);
+      Assert(r2.success);
+      Assert(r2 == 1);
+      Assert(*r2 == 1);
     }
 
     test("return_error");
