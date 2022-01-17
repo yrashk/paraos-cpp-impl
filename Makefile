@@ -14,7 +14,7 @@ QEMU_PARAMS = -cpu max -serial stdio -smp 2
 
 CXX_FLAGS += -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 	     -fpic -fno-stack-protector -mno-red-zone --std=c++20 \
-	     -I libpara
+	     -I libpara -Wall -Werror
 
 ifeq ($(RELEASE),false)
   CXX_FLAGS += -g

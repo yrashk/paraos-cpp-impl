@@ -44,7 +44,7 @@ public:
 
 class ApplicationProcessor : public Processor {
 
-  BootstrapProcessor &bsp;
+  [[maybe_unused]] BootstrapProcessor &bsp;
 
 public:
   ApplicationProcessor(BootstrapProcessor &bsp) : bsp(bsp) {}
