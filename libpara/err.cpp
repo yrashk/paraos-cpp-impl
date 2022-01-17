@@ -194,6 +194,29 @@ public:
       Assert(f_try_fail() == Error("err"));
     }
 
+    test("tryUnwrap executes code block once");
+    {
+      int i = 0;
+      auto f = [&]() -> Result<int> {
+        i += 1;
+        return 1;
+      };
+      auto f_try = [&]() -> Result<int> { return tryUnwrap(f()); };
+      Assert(f_try() == 1);
+      Assert(i == 1);
+
+      i = 0;
+
+      auto f_fail = [&]() -> Result<int> {
+        i += 1;
+        return Error("err");
+      };
+
+      auto f_fail_try = [&]() -> Result<int> { return tryUnwrap(f_fail()); };
+      Assert(f_fail_try() == Error("err"));
+      Assert(i == 1);
+    }
+
     test("tryCatch");
     {
       Result<int> r(Error("err"));
