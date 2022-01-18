@@ -10,6 +10,8 @@ using namespace libpara::basic_types;
 
 #include <err.hpp>
 
+export void *operator new(unsigned long sz, void *ptr) { return ptr; }
+
 export namespace kernel::pmm {
 
 template <typename T>
@@ -107,6 +109,13 @@ public:
 
 template <typename T, allocator A>
 Result<T *> allocate(A &allocator,
+                     decltype(alignof(T)) alignment = alignof(T)) {
+  return reinterpret_cast<T *>(
+      tryUnwrap(allocator.allocate(sizeof(T), alignment)));
+}
+
+template <typename T>
+Result<T *> allocate(Allocator &allocator,
                      decltype(alignof(T)) alignment = alignof(T)) {
   return reinterpret_cast<T *>(
       tryUnwrap(allocator.allocate(sizeof(T), alignment)));

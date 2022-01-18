@@ -18,6 +18,10 @@ using i64 = long long;
 
 using usize = decltype(sizeof(nullptr));
 
+struct nothing {
+  u8 nothing[0];
+};
+
 } // namespace libpara::basic_types
 
 using namespace libpara::basic_types;
@@ -31,3 +35,4 @@ static_assert(sizeof(i32) == 4);
 static_assert(sizeof(u64) == 8);
 static_assert(sizeof(i64) == 8);
 static_assert(sizeof(usize) == sizeof(nullptr));
+static_assert(sizeof(nothing) == 0);

@@ -30,13 +30,17 @@ kernel_sources = kernel/bootboot.cpp kernel/cxx.cpp
 kernel_objects = $(patsubst %.cpp,$(build)/%.o,$(kernel_sources))
 
 libkernel_sources = kernel/devices/serial.cpp \
-	kernel/platform.cpp \
-	kernel/platform/x86_64.cpp kernel/platform/x86_64/port.cpp kernel/platform/x86_64/serial.cpp \
 	kernel/pmm.cpp \
-	kernel/testing.cpp kernel/main.cpp
+	kernel/platform.cpp \
+	kernel/platform/x86_64/gdt.cpp kernel/platform/x86_64/idt.cpp \
+	kernel/platform/x86_64/port.cpp \
+	kernel/platform/x86_64/serial.cpp \
+	kernel/platform/x86_64/panic.cpp \
+        kernel/platform/x86_64/init.cpp \
+	kernel/platform/x86_64.cpp kernel/testing.cpp kernel/main.cpp
 libkernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libkernel_sources))))
 
-libpara_sources = libpara/basic_types.cpp libpara/concepts.cpp libpara/formatting.cpp libpara/testing.cpp  \
+libpara_sources = libpara/basic_types.cpp libpara/concepts.cpp libpara/formatting.cpp libpara/testing.cpp libpara/loop.cpp \
 		  libpara/xxh64.cpp libpara/err.cpp
 libpara_headers = $(wildcard libpara/*.hpp)
 libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))

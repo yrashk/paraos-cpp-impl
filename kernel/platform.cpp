@@ -22,13 +22,18 @@ using Target = PARAOS_TARGET;
 template <typename Iface, Platform P = Target> struct impl;
 
 /**
+ * Initializes the platform
+ */
+struct initialize {};
+
+/**
  * Gets current CPU's ID
  */
-using cpuid = u16();
+struct cpuid {};
 
 /**
  * Halts the CPU
  */
-using halt = void();
+struct halt {};
 
 } // namespace kernel::platform
