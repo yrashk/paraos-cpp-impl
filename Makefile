@@ -42,7 +42,7 @@ libkernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.
 libkernel_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libkernel_sources))))
 
 libpara_sources = libpara/basic_types.cpp libpara/concepts.cpp libpara/formatting.cpp libpara/testing.cpp libpara/loop.cpp \
-		  libpara/xxh64.cpp libpara/err.cpp
+		  libpara/xxh64.cpp libpara/err.cpp libpara/sync.cpp
 libpara_headers = $(wildcard libpara/*.hpp)
 libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
 libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))

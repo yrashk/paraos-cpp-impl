@@ -4,9 +4,11 @@ import libpara.concepts;
 import libpara.formatting;
 import libpara.err;
 import libpara.basic_types;
+import libpara.sync;
 
 using namespace libpara::err;
 using namespace libpara::basic_types;
+using namespace libpara::sync;
 
 #include <err.hpp>
 
@@ -46,6 +48,7 @@ class WatermarkAllocator : public Allocator {
   void *ptr;
   usize sz;
   usize watermark = 0;
+  libpara::sync::Lock lock;
 
 public:
   WatermarkAllocator() {}
@@ -56,6 +59,7 @@ public:
   WatermarkAllocator(void *ptr, usize size) : ptr(ptr), sz(size) {}
 
   virtual Result<void *> allocate(usize size, usize alignment) {
+    auto guard = lock.lockWithGuard();
     usize ptr_addr = reinterpret_cast<usize>(ptr);
     auto pending_watermark =
         alignUp(ptr_addr + watermark, alignment) - ptr_addr;
