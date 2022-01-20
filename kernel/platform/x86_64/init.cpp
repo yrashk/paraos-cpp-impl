@@ -38,7 +38,7 @@ Result<nothing> initialize(kernel::pmm::Allocator &allocator) {
     new (reinterpret_cast<void *>(idtr->gates + i))
         idt::Gate(reinterpret_cast<void *>(
                       kernel::platform::x86_64::panic::panic_isr<i>::isr),
-                  8, idt::Trap);
+                  gdtr->kernelCodeSegment(), idt::Trap);
   });
 
   idtr->load();

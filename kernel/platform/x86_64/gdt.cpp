@@ -59,8 +59,8 @@ public:
     *reinterpret_cast<Access *>(segment + header_access) = access;
   }
 
-  Access getAccess() {
-    return *reinterpret_cast<Access *>(segment + header_access);
+  const Access getAccess() const {
+    return *reinterpret_cast<const Access *>(segment + header_access);
   }
 };
 
@@ -70,22 +70,33 @@ template <u16 n_segments> struct Register {
   Segment null_segment = Segment();
   Segment segments[n_segments];
 
-  void load() {
-    asm volatile("lgdt %0" ::"m"(*this));
-
-    u16 data_segment, code_segment;
-
+  inline u16 kernelCodeSegment() const {
     for (u16 i = 0; i < n_segments; i++) {
       if ((segments[i].getAccess() & (Privilege0 | Code)) ==
           (Privilege0 | Code))
-        code_segment = i;
+        return (i + 1) * sizeof(Segment);
+    }
+    return 0;
+  }
+
+  inline u16 kernelDataSegment() const {
+    for (u16 i = 0; i < n_segments; i++) {
+      if ((segments[i].getAccess() & (Privilege0 | Code)) ==
+          (Privilege0 | Code))
+        continue;
+
       if ((segments[i].getAccess() & (Privilege0 | Data)) ==
           (Privilege0 | Data))
-        data_segment = i;
+        return (i + 1) * sizeof(Segment);
     }
+    return 0;
+  }
 
-    const u64 ds = (data_segment + 1) * sizeof(Segment);
-    const u64 cs = (code_segment + 1) * sizeof(Segment);
+  void load() {
+    asm volatile("lgdt %0" ::"m"(*this));
+
+    const u64 ds = kernelDataSegment();
+    const u64 cs = kernelCodeSegment();
 
     asm volatile("mov %0, %%ds ;  mov %0, %%fs ;  mov %0, %%gs "
                  "; mov %0, %%es ;  mov %0, %%ss"
