@@ -88,17 +88,15 @@ $(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp Makefile $(libpara_pcms) $(lib
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
 	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
-$(build)/kernel.%.o: kernel/$$(subst .,/,%).cpp Makefile $(libpara_pcms) $(libpara_sources) $(libpara_headers)
+$(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile $(libpara_pcms) $(libpara_sources) $(libpara_headers)
 	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) \
-	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
+	$(CXX) -target x86_64-unknown -c $< -o $@
 
 $(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
 	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
-$(build)/libpara.%.o: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
+$(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile $(libpara_headers)
 	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) \
-	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
+	$(CXX) -target x86_64-unknown -c $< -o $@
