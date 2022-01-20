@@ -77,6 +77,8 @@ qemu-gdb: $(build)/boot.img
 
 clean:
 	rm -rf $(build)
+
+deepclean: clean
 	$(MAKE) -C tools/mkbootimg clean
 
 .SECONDEXPANSION:
