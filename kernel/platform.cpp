@@ -36,4 +36,9 @@ struct cpuid {};
  */
 struct halt {};
 
+/**
+ * Terminates the emulator
+ */
+struct exit_emulator {};
+
 } // namespace kernel::platform

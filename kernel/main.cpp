@@ -1,12 +1,6 @@
 export module kernel.main;
 
 import kernel.devices.serial;
-#ifndef RELEASE
-import kernel.testing;
-import libpara.testing;
-import libpara.err;
-import libpara.loop;
-#endif
 import libpara.formatting;
 import kernel.pmm;
 import kernel.platform;
@@ -39,19 +33,6 @@ public:
     format(serial, "ParaOS\n");
     format(serial, "Available memory: ",
            this->allocator.availableMemory() / (1024 * 1024), "MB\n");
-#ifndef RELEASE
-    serial.write("Self-testing: ");
-    {
-      // destruct sink at the end of the block
-      auto sink = kernel::testing::SerialConsoleSink(serial);
-
-      libpara::err::tests::TestCase(sink).start();
-      libpara::loop::tests::TestCase(sink).start();
-      kernel::pmm::tests::TestCase(sink).start();
-    }
-    serial.write("Self-testing done.\n");
-
-#endif
     kernel::platform::impl<kernel::platform::halt>::function();
   }
 };

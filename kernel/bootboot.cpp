@@ -6,6 +6,7 @@ import libpara.formatting;
 import kernel.main;
 import kernel.pmm;
 import kernel.testing;
+import kernel.devices.serial;
 import kernel.platform;
 import kernel.platform.x86_64;
 import kernel.platform.x86_64.serial;
@@ -60,6 +61,21 @@ struct Bootboot {
 };
 
 extern Bootboot bootboot;
+extern unsigned char environment[4096];
+
+bool isTesting() {
+  usize i = 0;
+  while (true) {
+    if (environment[i] == 0)
+      return false;
+    if (environment[i] == 't' && environment[i + 1] == 'e' &&
+        environment[i + 2] == 's' && environment[i + 3] == 't' &&
+        environment[i + 4] == '=' && environment[i + 5] == 'y' &&
+        environment[i + 6] == 'e' && environment[i + 7] == 's')
+      return true;
+    i++;
+  }
+}
 
 extern "C" void bootboot_main() {
   kernel::pmm::ChainedAllocator<kernel::pmm::WatermarkAllocator, 32>
@@ -75,9 +91,16 @@ extern "C" void bootboot_main() {
     }
   }
 
-  if (bootboot.isBootstrapCPU()) {
-    bsp.run();
+  if (isTesting()) {
+    if (bootboot.isBootstrapCPU()) {
+      kernel::testing::run();
+    }
+    kernel::platform::impl<kernel::platform::halt>::function();
   } else {
-    kernel::ApplicationProcessor(defaultAllocator, bsp).run();
+    if (bootboot.isBootstrapCPU()) {
+      bsp.run();
+    } else {
+      kernel::ApplicationProcessor(defaultAllocator, bsp).run();
+    }
   }
 }

@@ -28,4 +28,14 @@ template <> struct impl<halt, X86_64> {
   static void function() { asm("cli ; hlt"); }
 };
 
+template <> struct impl<exit_emulator, X86_64> {
+  [[noreturn]] static void function(u16 exit_code) {
+    asm volatile(
+        "mov %0, %%ax ; mov %1, %%dx; outw %%ax, %%dx" ::"a"(exit_code),
+        "i"(0x501));
+    while (true) {
+    }
+  }
+};
+
 } // namespace kernel::platform

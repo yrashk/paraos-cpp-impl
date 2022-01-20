@@ -65,6 +65,10 @@ $(build)/boot.img: $(build)/paraos tools/mkbootimg/mkbootimg boot.config bootima
 	tools/mkbootimg/mkbootimg check $<
 	tools/mkbootimg/mkbootimg bootimage.json $@
 
+$(build)/boot_test.img: $(build)/paraos tools/mkbootimg/mkbootimg boot_test.config bootimage_test.json
+	tools/mkbootimg/mkbootimg check $<
+	tools/mkbootimg/mkbootimg bootimage_test.json $@
+
 tools/mkbootimg/mkbootimg: $(filter-out tools/mkbootimg/mkbootimg,$(wildcard tools/mkbootimg/*.*))
 	$(MAKE) -C tools/mkbootimg
 	rm -f tools/mkbootimg*.zip	
@@ -74,6 +78,16 @@ qemu: $(build)/boot.img
  
 qemu-gdb: $(build)/boot.img
 	qemu-system-x86_64 --drive format=raw,file=$< $(QEMU_PARAMS) -S -s
+
+test: $(build)/boot_test.img
+	qemu-system-x86_64 -drive format=raw,file=$< $(QEMU_PARAMS) -no-reboot -device isa-debug-exit ;\
+	EXIT_CODE=$$?  ;\
+	exit $$(($$EXIT_CODE >> 1)) 
+
+test-gdb: $(build)/boot_test.img
+	qemu-system-x86_64 -drive format=raw,file=$< $(QEMU_PARAMS) -no-reboot -device isa-debug-exit -S -s ;\
+	EXIT_CODE=$$?  ;\
+	exit $$(($$EXIT_CODE >> 1)) 
 
 clean:
 	rm -rf $(build)
@@ -100,3 +114,5 @@ $(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
 $(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile $(libpara_headers)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@
+
+.ONESHELL:
