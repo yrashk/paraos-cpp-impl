@@ -39,19 +39,22 @@ libkernel_sources = kernel/devices/serial.cpp \
         kernel/platform/x86_64/init.cpp \
 	kernel/platform/x86_64.cpp kernel/testing.cpp kernel/main.cpp
 libkernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libkernel_sources))))
+libkernel_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libkernel_sources))))
 
 libpara_sources = libpara/basic_types.cpp libpara/concepts.cpp libpara/formatting.cpp libpara/testing.cpp libpara/loop.cpp \
 		  libpara/xxh64.cpp libpara/err.cpp
 libpara_headers = $(wildcard libpara/*.hpp)
 libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
+libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))
 
 all: $(build)/boot.img
 
 check:
 	@echo $(libkernel_pcms)
 
-$(build)/paraos: $(kernel_objects) $(kernel_sources) kernel/bootboot.ld Makefile
-	$(CXX_LD) $(kernel_objects) -T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib
+$(build)/paraos: $(kernel_objects) $(kernel_sources) $(libkernel_objects) $(libpara_objects) kernel/bootboot.ld Makefile
+	$(CXX_LD) $(kernel_objects) $(libkernel_objects) $(libpara_objects) \
+	-T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib
 
 $(build)/%.o: %.cpp Makefile $(libpara_pcms) $(libkernel_pcms) $(libpara_headers)
 	@mkdir -p $(dir $@)
@@ -83,7 +86,17 @@ $(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp Makefile $(libpara_pcms) $(lib
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
 	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
+$(build)/kernel.%.o: kernel/$$(subst .,/,%).cpp Makefile $(libpara_pcms) $(libpara_sources) $(libpara_headers)
+	@mkdir -p $(dir $@)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) \
+	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
+
 $(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
+	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
+
+$(build)/libpara.%.o: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
+	@mkdir -p $(dir $@)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) \
 	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)

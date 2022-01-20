@@ -18,7 +18,7 @@ using namespace libpara::loop;
 
 export namespace kernel::platform::x86_64 {
 
-inline Result<nothing> initialize(kernel::pmm::Allocator &allocator) {
+Result<nothing> initialize(kernel::pmm::Allocator &allocator) {
   using GdtRegister = gdt::Register<2>;
   auto gdtrAlloc =
       tryUnwrap(allocator.allocate(sizeof(GdtRegister), alignof(GdtRegister)));

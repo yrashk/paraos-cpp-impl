@@ -102,8 +102,7 @@ template <> struct exception_name<0x14> {
 
 template <u64 interrupt> struct panic_isr {
 
-  [[gnu::interrupt]] static inline void isr(interrupt_frame *frame,
-                                            usize error_code) {
+  [[gnu::interrupt]] static void isr(interrupt_frame *frame, usize error_code) {
     auto serial = kernel::platform::x86_64::SerialPort();
     serial.initialize();
     serial.write("PANIC: ");

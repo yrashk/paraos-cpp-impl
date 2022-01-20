@@ -12,7 +12,7 @@ enum Flag : u8 {
   LongMode = 1 << 1,
 };
 
-inline Flag operator|(Flag a, Flag b) {
+Flag operator|(Flag a, Flag b) {
   return static_cast<Flag>(static_cast<u8>(a) | static_cast<u8>(b));
 }
 
@@ -32,7 +32,7 @@ enum Access : u8 {
   Accessed = 1,
 };
 
-inline Access operator|(Access a, Access b) {
+Access operator|(Access a, Access b) {
   return static_cast<Access>(static_cast<u8>(a) | static_cast<u8>(b));
 }
 

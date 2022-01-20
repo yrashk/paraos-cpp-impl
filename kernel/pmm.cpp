@@ -19,7 +19,7 @@ concept allocator = requires(T a, usize size, usize alignment) {
   {a.allocate(size, alignment)};
 };
 
-const inline auto OutOfMemoryError = Error("OutOfMemory");
+const auto OutOfMemoryError = Error("OutOfMemory");
 
 class Allocator {
 
