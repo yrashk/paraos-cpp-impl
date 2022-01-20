@@ -130,11 +130,11 @@ public:
     {
 
       auto err = Error("test");
-      Assert(err.name[0] == 't');
-      Assert(err.name[1] == 'e');
-      Assert(err.name[2] == 's');
-      Assert(err.name[3] == 't');
-      Assert(err.name[4] == 0);
+      Expect(err.name[0] == 't');
+      Expect(err.name[1] == 'e');
+      Expect(err.name[2] == 's');
+      Expect(err.name[3] == 't');
+      Expect(err.name[4] == 0);
     }
 
     test("Error equality");
@@ -144,27 +144,27 @@ public:
       auto err2 = Error("test2");
       auto err3 = Error("test1");
 
-      Assert(err1 == err3);
-      Assert(err1 != err2);
+      Expect(err1 == err3);
+      Expect(err1 != err2);
     }
     test("Result construction");
     {
 
       Result<int> r(1);
-      Assert(r.success);
-      Assert(r == 1);
-      Assert(*r == 1);
+      Expect(r.success);
+      Expect(r == 1);
+      Expect(*r == 1);
 
       Result<int> r1(Error("e"));
-      Assert(!r1.success);
-      Assert(r1 == Error("e"));
-      Assert(r1.error() == Error("e"));
+      Expect(!r1.success);
+      Expect(r1 == Error("e"));
+      Expect(r1.error() == Error("e"));
 
       int val = 1;
       Result<int> r2(val);
-      Assert(r2.success);
-      Assert(r2 == 1);
-      Assert(*r2 == 1);
+      Expect(r2.success);
+      Expect(r2 == 1);
+      Expect(*r2 == 1);
     }
 
     test("return_error");
@@ -172,11 +172,11 @@ public:
       auto fret = []() -> Result<int> {
         return return_error(Error("failure"));
       };
-      Assert(fret() == Error("failure"));
+      Expect(fret() == Error("failure"));
       auto fret_str = []() -> Result<int> { return return_error("failure"); };
-      Assert(fret_str() == Error("failure"));
+      Expect(fret_str() == Error("failure"));
       auto fret_unsup = []() -> Result<int> { return return_error(true); };
-      Assert(fret_unsup() == Error("Unsupported error"));
+      Expect(fret_unsup() == Error("Unsupported error"));
     }
     test("tryUnwrap");
     {
@@ -190,8 +190,8 @@ public:
         tryUnwrap(f_fail());
         return 1;
       };
-      Assert(f_try() == 2);
-      Assert(f_try_fail() == Error("err"));
+      Expect(f_try() == 2);
+      Expect(f_try_fail() == Error("err"));
     }
 
     test("tryUnwrap executes code block once");
@@ -202,8 +202,8 @@ public:
         return 1;
       };
       auto f_try = [&]() -> Result<int> { return tryUnwrap(f()); };
-      Assert(f_try() == 1);
-      Assert(i == 1);
+      Expect(f_try() == 1);
+      Expect(i == 1);
 
       i = 0;
 
@@ -213,16 +213,16 @@ public:
       };
 
       auto f_fail_try = [&]() -> Result<int> { return tryUnwrap(f_fail()); };
-      Assert(f_fail_try() == Error("err"));
-      Assert(i == 1);
+      Expect(f_fail_try() == Error("err"));
+      Expect(i == 1);
     }
 
     test("tryCatch");
     {
       Result<int> r(Error("err"));
-      Assert(tryCatch(r, 1) == 1);
+      Expect(tryCatch(r, 1) == 1);
       Result<int> r1(10);
-      Assert(tryCatch(r1, 1) == 10);
+      Expect(tryCatch(r1, 1) == 10);
     }
   }
 };

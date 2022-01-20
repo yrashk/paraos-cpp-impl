@@ -140,11 +140,11 @@ public:
       usize base = 0x0;
       auto alloc =
           WatermarkAllocator(reinterpret_cast<void *>(base), 1024 * 1024);
-      Assert(alloc.availableMemory() == 1024 * 1024);
+      Expect(alloc.availableMemory() == 1024 * 1024);
       Result<u64 *> a = kernel::pmm::allocate<u64>(alloc);
-      Assert(a.success);
-      Assert(reinterpret_cast<usize>(*a) - base == 0);
-      Assert(alloc.availableMemory() == 1024 * 1024 - sizeof(u64));
+      Expect(a.success);
+      Expect(reinterpret_cast<usize>(*a) - base == 0);
+      Expect(alloc.availableMemory() == 1024 * 1024 - sizeof(u64));
     }
 
     test("WatermarkAllocator allocation with custom alignment");
@@ -152,36 +152,36 @@ public:
       usize base = 0x0;
       auto alloc =
           WatermarkAllocator(reinterpret_cast<void *>(base), 1024 * 1024);
-      Assert(alloc.availableMemory() == 1024 * 1024);
+      Expect(alloc.availableMemory() == 1024 * 1024);
       Result<u8 *> a = kernel::pmm::allocate<u8>(alloc);
-      Assert(a.success);
-      Assert(reinterpret_cast<usize>(*a) - base == 0);
-      Assert(alloc.availableMemory() == 1024 * 1024 - sizeof(u8));
+      Expect(a.success);
+      Expect(reinterpret_cast<usize>(*a) - base == 0);
+      Expect(alloc.availableMemory() == 1024 * 1024 - sizeof(u8));
 
       Result<u64 *> b = kernel::pmm::allocate<u64>(alloc, 1);
-      Assert(reinterpret_cast<usize>(*b) - base == 1);
-      Assert(alloc.availableMemory() == 1024 * 1024 - sizeof(u64) - sizeof(u8));
+      Expect(reinterpret_cast<usize>(*b) - base == 1);
+      Expect(alloc.availableMemory() == 1024 * 1024 - sizeof(u64) - sizeof(u8));
     }
 
     test("ChainedAllocator");
     {
       usize base = 0x0;
       auto alloc = ChainedAllocator<WatermarkAllocator, 2>();
-      Assert(alloc
+      Expect(alloc
                  .addAllocator(
                      WatermarkAllocator(reinterpret_cast<void *>(base), 1024))
                  .success);
-      Assert(alloc
+      Expect(alloc
                  .addAllocator(
                      WatermarkAllocator(reinterpret_cast<void *>(base), 1024))
                  .success);
-      Assert(alloc.availableMemory() == 1024 * 2);
+      Expect(alloc.availableMemory() == 1024 * 2);
       kernel::pmm::allocate<u8[1024]>(alloc);
-      Assert(alloc.getAllocator(0).availableMemory() == 0);
-      Assert(alloc.availableMemory() == 1024);
+      Expect(alloc.getAllocator(0).availableMemory() == 0);
+      Expect(alloc.availableMemory() == 1024);
       kernel::pmm::allocate<u8[1024]>(alloc);
-      Assert(alloc.availableMemory() == 0);
-      Assert(!kernel::pmm::allocate<u8[1024]>(alloc).success);
+      Expect(alloc.availableMemory() == 0);
+      Expect(!kernel::pmm::allocate<u8[1024]>(alloc).success);
     }
   }
 };

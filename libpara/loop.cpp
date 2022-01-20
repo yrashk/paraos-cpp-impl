@@ -32,7 +32,7 @@ public:
     {
       int a = 0;
       constexpr_loop<int, 10>([&]<int i>() { a += i; });
-      Assert(a == 0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9);
+      Expect(a == 0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9);
     }
   };
 };

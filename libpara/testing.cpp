@@ -31,7 +31,7 @@ public:
 
   void test(const char *name) { sink.test(name); }
 
-  void assert(bool success, const char *message = "",
+  void expect(bool success, const char *message = "",
               const char *file = nullptr, const char *line = nullptr) {
     sink.report(success, message, file, line);
   }
