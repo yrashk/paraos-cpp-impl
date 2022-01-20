@@ -1,6 +1,7 @@
 export module kernel.main;
 
 import kernel.devices.serial;
+import libpara.concepts;
 import libpara.formatting;
 import kernel.pmm;
 import kernel.platform;
@@ -11,19 +12,20 @@ using namespace libpara::formatting;
 
 export namespace kernel {
 
-template <pmm::allocator A> class Processor {
+class Processor {
 protected:
-  A &allocator;
+  kernel::pmm::Allocator &allocator;
 
 public:
-  Processor(A &allocator) : allocator(allocator) {}
+  Processor(kernel::pmm::Allocator &allocator) : allocator(allocator) {}
   virtual void run() = 0;
 };
 
-template <pmm::allocator A> class BootstrapProcessor : public Processor<A> {
+class BootstrapProcessor : public Processor {
 
 public:
-  BootstrapProcessor(A &allocator) : Processor<A>(allocator) {}
+  BootstrapProcessor(kernel::pmm::Allocator &allocator)
+      : Processor(allocator) {}
 
   virtual void run() {
     kernel::platform::impl<kernel::platform::initialize>::function(
@@ -37,13 +39,14 @@ public:
   }
 };
 
-template <pmm::allocator A> class ApplicationProcessor : public Processor<A> {
+class ApplicationProcessor : public Processor {
 
-  BootstrapProcessor<A> bsp;
+  BootstrapProcessor bsp;
 
 public:
-  ApplicationProcessor(A allocator, BootstrapProcessor<A> &bsp)
-      : Processor<A>(allocator), bsp(bsp) {}
+  ApplicationProcessor(kernel::pmm::Allocator &allocator,
+                       BootstrapProcessor &bsp)
+      : Processor(allocator), bsp(bsp) {}
 
   virtual void run() {
     kernel::platform::impl<kernel::platform::initialize>::function(
