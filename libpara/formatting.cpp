@@ -7,6 +7,9 @@ using namespace libpara::basic_types;
 using namespace libpara;
 using namespace libpara::concepts;
 
+const constexpr char *digits = "0123456789";
+const constexpr double log10_2 = 0.30102999566398;
+
 export namespace libpara::formatting {
 
 template <typename T>
@@ -27,8 +30,6 @@ template <writer W, typename... Ts> struct formatter<W, const char *, Ts...> {
 template <writer W, concepts::integer T, typename... Ts>
 struct formatter<W, T, Ts...> {
   static void format(W &writer, T value, Ts... rest) {
-    static const constexpr char *digits = "0123456789";
-    static const constexpr double log10_2 = 0.30102999566398;
     // For simplicity's sake, we allow log10(2) * bitwidth + 1
     // + 1 byte for null terminator + 1 (if signed) for sign
     const constexpr usize len = (log10_2 * sizeof(T) * 8) + 2 +
@@ -43,11 +44,15 @@ struct formatter<W, T, Ts...> {
     char buf[len];
     buf[len - 1] = 0;
     auto i = len - 1;
-    while (value > 0) {
+    if (value == 0) {
       i--;
-      buf[i] = (char)digits[value % 10];
-      value = value / 10;
-    }
+      buf[i] = '0';
+    } else
+      while (value > 0) {
+        i--;
+        buf[i] = (char)digits[value % 10];
+        value = value / 10;
+      }
     if (negative) {
       i--;
       buf[i] = '-';
