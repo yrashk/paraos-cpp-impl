@@ -18,6 +18,7 @@ CXX_FLAGS += -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 
 ifeq ($(RELEASE),false)
   CXX_FLAGS += -g
+  PCM_CXX_FLAGS += -g
 endif
 
 ifeq ($(RELEASE),true)
@@ -106,7 +107,7 @@ $(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp Makefile $(libpara_pcms) $(lib
 
 $(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile $(libpara_pcms) $(libpara_sources) $(libpara_headers)
 	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
 
 $(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
 	@mkdir -p $(dir $@)
@@ -115,6 +116,6 @@ $(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
 
 $(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile $(libpara_headers)
 	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
 
 .ONESHELL:
