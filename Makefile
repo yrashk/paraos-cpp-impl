@@ -47,6 +47,8 @@ libpara_headers = $(wildcard libpara/*.hpp)
 libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
 libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))
 
+.SECONDARY: $(libkernel_pcms) $(libpara_pcms)
+
 all: $(build)/boot.img
 
 check:
