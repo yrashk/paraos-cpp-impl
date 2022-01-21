@@ -6,8 +6,6 @@ import kernel.platform.x86_64.serial;
 
 using namespace libpara::basic_types;
 
-export namespace kernel::platform::x86_64::panic {
-
 struct interrupt_frame {
   usize ip;
   usize cs;
@@ -15,6 +13,8 @@ struct interrupt_frame {
   usize sp;
   usize ss;
 };
+
+export namespace kernel::platform::x86_64::panic {
 
 template <u64 interrupt> struct exception_name {
   static constexpr const char *name = "Unknown";
@@ -100,9 +100,68 @@ template <> struct exception_name<0x14> {
   static constexpr const char *name = "Virtualization Exception";
 };
 
+template <u64 interrupt> struct exception_error_code {
+  static constexpr bool present = false;
+};
+
+template <> struct exception_error_code<0x08> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x0A> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x0B> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x0C> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x0D> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x0E> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x11> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x15> {
+  static constexpr bool present = true;
+};
+
+template <> struct exception_error_code<0x1D> {
+  static constexpr bool present = true;
+};
+
+template <u64 interrupt>
+concept exception_with_error_code = exception_error_code<interrupt>::present;
+
+template <u64 interrupt>
+concept exception_without_error_code =
+    !exception_error_code<interrupt>::present;
+
 template <u64 interrupt> struct panic_isr {
 
-  [[gnu::interrupt]] static void isr(interrupt_frame *frame, usize error_code) {
+  [[gnu::interrupt]] static void
+  isr(interrupt_frame *frame) requires exception_without_error_code<interrupt> {
+    auto serial = kernel::platform::x86_64::SerialPort();
+    serial.initialize();
+    serial.write("PANIC: ");
+    serial.write(exception_name<interrupt>::name);
+    serial.write("\n");
+    asm volatile("cli ; hlt");
+  }
+
+  [[gnu::interrupt]] static void
+  isr(interrupt_frame *frame,
+      usize error_code) requires exception_with_error_code<interrupt> {
     auto serial = kernel::platform::x86_64::SerialPort();
     serial.initialize();
     serial.write("PANIC: ");
