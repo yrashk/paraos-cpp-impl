@@ -78,7 +78,7 @@ bool isTesting() {
 }
 
 extern "C" void bootboot_main() {
-  kernel::pmm::ChainedAllocator<kernel::pmm::WatermarkAllocator, 32>
+  static kernel::pmm::ChainedAllocator<kernel::pmm::WatermarkAllocator, 32>
       defaultAllocator;
 
   auto bsp = kernel::BootstrapProcessor(defaultAllocator);
