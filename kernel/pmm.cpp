@@ -52,14 +52,10 @@ class WatermarkAllocator : public Allocator {
 
 public:
   WatermarkAllocator() {}
-
-  WatermarkAllocator(WatermarkAllocator &alloc)
-      : ptr(alloc.ptr), sz(alloc.sz), watermark(alloc.watermark) {}
-
   WatermarkAllocator(void *ptr, usize size) : ptr(ptr), sz(size) {}
 
   virtual Result<void *> allocate(usize size, usize alignment) {
-    auto guard = lock.lockWithGuard();
+    auto guard = LockGuard(lock);
     usize ptr_addr = reinterpret_cast<usize>(ptr);
     auto pending_watermark =
         alignUp(ptr_addr + watermark, alignment) - ptr_addr;

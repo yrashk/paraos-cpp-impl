@@ -32,8 +32,14 @@ struct Bootboot {
   };
 
   static const auto header_size = 0x04;
+  static const auto header_numcores = 0x0a;
   static const auto header_bspid = 0x0c;
   static const auto header_mmap = 0x80;
+
+  inline u16 numCores() {
+    return *reinterpret_cast<u16 *>(reinterpret_cast<u8 *>(this) +
+                                    header_numcores);
+  }
 
   u16 bootstrapCPU() {
     return *reinterpret_cast<u16 *>(reinterpret_cast<u8 *>(this) +
@@ -81,15 +87,8 @@ extern "C" void bootboot_main() {
   static kernel::pmm::ChainedAllocator<kernel::pmm::WatermarkAllocator, 32>
       defaultAllocator;
 
-  auto bsp = kernel::BootstrapProcessor(defaultAllocator);
-
-  for (u32 i = 0; i < bootboot.mmapEntries(); i++) {
-    auto entry = bootboot.mmapEntry(i);
-    if (entry.type() == Bootboot::mmap_entry::Free) {
-      defaultAllocator.addAllocator(
-          kernel::pmm::WatermarkAllocator(entry.ptr, entry.size()));
-    }
-  }
+  static auto bsp =
+      kernel::BootstrapProcessor(defaultAllocator, bootboot.numCores());
 
   if (isTesting()) {
     if (bootboot.isBootstrapCPU()) {
@@ -98,6 +97,13 @@ extern "C" void bootboot_main() {
     kernel::platform::impl<kernel::platform::halt>::function();
   } else {
     if (bootboot.isBootstrapCPU()) {
+      for (u32 i = 0; i < bootboot.mmapEntries(); i++) {
+        auto entry = bootboot.mmapEntry(i);
+        if (entry.type() == Bootboot::mmap_entry::Free) {
+          defaultAllocator.addAllocator(
+              kernel::pmm::WatermarkAllocator(entry.ptr, entry.size()));
+        }
+      }
       bsp.run();
     } else {
       kernel::ApplicationProcessor(defaultAllocator, bsp).run();
