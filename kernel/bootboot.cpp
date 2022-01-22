@@ -105,9 +105,9 @@ extern "C" void bootboot_main() {
               kernel::pmm::WatermarkAllocator(entry.ptr, entry.size()));
         }
       }
-      bsp.run();
+      bsp.start();
     } else {
-      kernel::ApplicationProcessor(defaultAllocator, bsp).run();
+      kernel::ApplicationProcessor(defaultAllocator, bsp).start();
     }
   }
 }

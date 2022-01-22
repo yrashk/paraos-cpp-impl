@@ -1,18 +1,23 @@
 export module kernel.platform.x86_64;
 
 import libpara.basic_types;
+import libpara.err;
+
 import kernel.platform;
 import kernel.pmm;
 import kernel.platform.x86_64.init;
 import kernel.platform.x86_64.panic;
 
 using namespace libpara::basic_types;
+using namespace libpara::err;
+
+#include <err.hpp>
 
 export namespace kernel::platform {
 
 template <> struct impl<initialize, X86_64> {
-  static void function(kernel::pmm::Allocator &allocator) {
-    x86_64::initialize(allocator);
+  static Result<nothing> function(kernel::pmm::Allocator &allocator) {
+    return tryUnwrap(x86_64::initialize(allocator));
   }
 };
 

@@ -1,9 +1,11 @@
 export module kernel.main;
 
-import kernel.devices.serial;
 import libpara.basic_types;
 import libpara.concepts;
 import libpara.formatting;
+import libpara.err;
+
+import kernel.devices.serial;
 import kernel.pmm;
 import kernel.platform;
 import kernel.platform.x86_64;
@@ -11,6 +13,9 @@ import kernel.platform.x86_64.serial;
 
 using namespace libpara::basic_types;
 using namespace libpara::formatting;
+using namespace libpara::err;
+
+#include <err.hpp>
 
 export namespace kernel {
 
@@ -21,7 +26,19 @@ protected:
 public:
   constexpr Processor(kernel::pmm::Allocator &allocator)
       : allocator(allocator) {}
-  virtual void run() = 0;
+  virtual Result<nothing> run() = 0;
+  void start() {
+    tryCatch(run(), err, ({
+               kernel::platform::impl<kernel::devices::SerialPort>::type serial;
+               serial.initialize();
+               format(
+                   serial, "Uncaught error: ", err.name, ", CPU #",
+                   kernel::platform::impl<kernel::platform::cpuid>::function(),
+                   " terminated.\n");
+               kernel::platform::impl<kernel::platform::halt>::function();
+               nothing{};
+             }));
+  }
 };
 
 class BootstrapProcessor : public Processor {
@@ -36,11 +53,11 @@ public:
 
   void setNumCPUs(int n_cpus) { ncpus = n_cpus; }
 
-  virtual void run() {
-    kernel::platform::impl<kernel::platform::initialize>::function(
-        this->allocator);
+  virtual Result<nothing> run() {
+    tryUnwrap(kernel::platform::impl<kernel::platform::initialize>::function(
+        this->allocator));
     kernel::platform::impl<kernel::devices::SerialPort>::type serial;
-    serial.initialize();
+    tryUnwrap(serial.initialize());
     format(serial, "ParaOS\n");
     format(serial, "Available memory: ",
            this->allocator.availableMemory() / (1024 * 1024), "MB\n");
@@ -51,6 +68,7 @@ public:
 
     __atomic_store_n(&initialized, true, __ATOMIC_SEQ_CST);
     kernel::platform::impl<kernel::platform::halt>::function();
+    return nothing{};
   }
 
   void waitUntilInitialized() {
@@ -69,17 +87,18 @@ public:
                        BootstrapProcessor &bsp)
       : Processor(allocator), bsp(bsp) {}
 
-  virtual void run() {
+  virtual Result<nothing> run() {
     bsp.waitUntilInitialized();
     kernel::platform::impl<kernel::devices::SerialPort>::type serial;
-    serial.initialize();
+    tryUnwrap(serial.initialize());
 
-    kernel::platform::impl<kernel::platform::initialize>::function(
-        this->allocator);
+    tryUnwrap(kernel::platform::impl<kernel::platform::initialize>::function(
+        this->allocator));
     format(serial, "CPU #",
            kernel::platform::impl<kernel::platform::cpuid>::function(),
            " ready\n");
     kernel::platform::impl<kernel::platform::halt>::function();
+    return nothing{};
   }
 };
 

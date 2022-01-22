@@ -7,4 +7,11 @@
     value;                                                                     \
   })
 
-#define tryCatch(e, c) ({ e.success ? e.result.value : c; })
+#define tryCatch(e, err, c)                                                    \
+  ({                                                                           \
+    auto v = e;                                                                \
+    v.success ? v.result.value : ({                                            \
+      [[maybe_unused]] auto err = e.error();                                   \
+      c;                                                                       \
+    });                                                                        \
+  })

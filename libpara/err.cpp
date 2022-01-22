@@ -220,9 +220,11 @@ public:
     test("tryCatch");
     {
       Result<int> r(Error("err"));
-      Expect(tryCatch(r, 1) == 1);
+      Expect(tryCatch(r, err, 1) == 1);
+      Result<int> r0(Error("err"));
+      Expect(tryCatch(r0, err, err.name[0] == 'e' ? 1 : 0) == 1);
       Result<int> r1(10);
-      Expect(tryCatch(r1, 1) == 10);
+      Expect(tryCatch(r1, err, 1) == 10);
     }
   }
 };
