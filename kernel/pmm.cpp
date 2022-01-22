@@ -22,12 +22,15 @@ concept allocator = requires(T a, usize size, usize alignment) {
 };
 
 const auto OutOfMemoryError = Error("OutOfMemory");
+const auto OverlappedMemoryError = Error("OverlappedMemory");
 
 class Allocator {
 
 public:
   virtual Result<void *> allocate(usize size, usize alignment) = 0;
   virtual usize availableMemory() = 0;
+
+  virtual bool overlaps(void *) { return false; }
 
 protected:
   inline usize alignDown(usize value, usize alignment) {
@@ -60,7 +63,7 @@ public:
     auto pending_watermark =
         alignUp(ptr_addr + watermark, alignment) - ptr_addr;
     auto new_watermark = pending_watermark + size;
-    if (new_watermark > ptr_addr + sz)
+    if (new_watermark > sz)
       return OutOfMemoryError;
     auto result = ptr_addr + pending_watermark;
     watermark = new_watermark;
@@ -68,6 +71,16 @@ public:
   }
 
   virtual usize availableMemory() { return sz - watermark; }
+
+  virtual bool overlaps(void *another_ptr) {
+    usize ptr_addr = reinterpret_cast<usize>(ptr);
+    usize another_ptr_addr = reinterpret_cast<usize>(another_ptr);
+    return another_ptr_addr >= ptr_addr && another_ptr_addr <= (ptr_addr + sz);
+  }
+
+  inline bool overlaps(WatermarkAllocator &allocator) {
+    return overlaps(allocator.ptr);
+  }
 };
 
 template <allocator A, int sz> class ChainedAllocator : public Allocator {
@@ -82,6 +95,10 @@ public:
     if (added_allocators + 1 > sz) {
       return OutOfMemoryError;
     }
+    for (int i = 0; i < added_allocators; i++) {
+      if (allocators[i].overlaps(allocator))
+        return OverlappedMemoryError;
+    }
     allocators[added_allocators] = allocator;
     added_allocators++;
     return added_allocators;
@@ -92,7 +109,7 @@ public:
   virtual Result<void *> allocate(usize size, usize alignment) {
     for (int i = 0; i < added_allocators; i++) {
       auto alloc = allocators[i].allocate(size, alignment);
-      if (alloc != OutOfMemoryError)
+      if (alloc.success || alloc != OutOfMemoryError)
         return alloc;
     }
     return OutOfMemoryError;
@@ -104,6 +121,14 @@ public:
       available += allocators[i].availableMemory();
     }
     return available;
+  }
+
+  virtual bool overlaps(void *another_ptr) {
+    for (int i = 0; i < added_allocators; i++) {
+      if (allocators[i].overlaps(another_ptr))
+        return true;
+    }
+    return false;
   }
 };
 
@@ -117,8 +142,8 @@ Result<T *> allocate(A &allocator,
 template <typename T>
 Result<T *> allocate(Allocator &allocator,
                      decltype(alignof(T)) alignment = alignof(T)) {
-  return reinterpret_cast<T *>(
-      tryUnwrap(allocator.allocate(sizeof(T), alignment)));
+  auto allocation = tryUnwrap(allocator.allocate(sizeof(T), alignment));
+  return reinterpret_cast<T *>(allocation);
 }
 
 } // namespace kernel::pmm
@@ -165,15 +190,14 @@ public:
 
     test("ChainedAllocator");
     {
-      usize base = 0x0;
       auto alloc = ChainedAllocator<WatermarkAllocator, 2>();
       Expect(alloc
                  .addAllocator(
-                     WatermarkAllocator(reinterpret_cast<void *>(base), 1024))
+                     WatermarkAllocator(reinterpret_cast<void *>(0x0), 1024))
                  .success);
       Expect(alloc
                  .addAllocator(
-                     WatermarkAllocator(reinterpret_cast<void *>(base), 1024))
+                     WatermarkAllocator(reinterpret_cast<void *>(0x1000), 1024))
                  .success);
       Expect(alloc.availableMemory() == 1024 * 2);
       kernel::pmm::allocate<u8[1024]>(alloc);
@@ -181,6 +205,7 @@ public:
       Expect(alloc.availableMemory() == 1024);
       kernel::pmm::allocate<u8[1024]>(alloc);
       Expect(alloc.availableMemory() == 0);
+      Expect(alloc.getAllocator(1).availableMemory() == 0);
       Expect(!kernel::pmm::allocate<u8[1024]>(alloc).success);
     }
   }

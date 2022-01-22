@@ -14,6 +14,9 @@ import kernel.platform.x86_64.init;
 
 using namespace libpara::basic_types;
 using namespace libpara::err;
+using namespace libpara::formatting;
+
+#include <err.hpp>
 
 struct Bootboot {
 
@@ -54,8 +57,8 @@ struct Bootboot {
 
   inline mmap_entry mmapEntry(u32 index) {
     return mmap_entry{
-        .ptr = reinterpret_cast<void *>(reinterpret_cast<u8 *>(this) +
-                                        header_mmap + 16 * index),
+        .ptr = *reinterpret_cast<void **>(reinterpret_cast<u8 *>(this) +
+                                          header_mmap + 16 * index),
         .sz = *reinterpret_cast<u64 *>(reinterpret_cast<u8 *>(this) +
                                        header_mmap + 16 * index + sizeof(u64))};
   }
@@ -98,11 +101,21 @@ extern "C" void bootboot_main() {
   } else {
     if (bootboot.isBootstrapCPU()) {
       bsp.setNumCPUs(bootboot.numCores());
+
       for (u32 i = 0; i < bootboot.mmapEntries(); i++) {
         auto entry = bootboot.mmapEntry(i);
         if (entry.type() == Bootboot::mmap_entry::Free) {
-          defaultAllocator.addAllocator(
-              kernel::pmm::WatermarkAllocator(entry.ptr, entry.size()));
+          tryCatch(
+              defaultAllocator.addAllocator(
+                  kernel::pmm::WatermarkAllocator(entry.ptr, entry.size())),
+              err, ({
+                kernel::platform::impl<kernel::devices::SerialPort>::type
+                    serial;
+                serial.initialize();
+                format(serial, "Uncaught error while preparing PMM: ", err.name,
+                       "\n");
+                0;
+              }));
         }
       }
       bsp.start();
