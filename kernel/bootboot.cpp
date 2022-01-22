@@ -84,11 +84,11 @@ bool isTesting() {
 }
 
 extern "C" void bootboot_main() {
-  static kernel::pmm::ChainedAllocator<kernel::pmm::WatermarkAllocator, 32>
+  static constinit kernel::pmm::ChainedAllocator<
+      kernel::pmm::WatermarkAllocator, 32>
       defaultAllocator;
 
-  static auto bsp =
-      kernel::BootstrapProcessor(defaultAllocator, bootboot.numCores());
+  static constinit auto bsp = kernel::BootstrapProcessor(defaultAllocator);
 
   if (isTesting()) {
     if (bootboot.isBootstrapCPU()) {
@@ -97,6 +97,7 @@ extern "C" void bootboot_main() {
     kernel::platform::impl<kernel::platform::halt>::function();
   } else {
     if (bootboot.isBootstrapCPU()) {
+      bsp.setNumCPUs(bootboot.numCores());
       for (u32 i = 0; i < bootboot.mmapEntries(); i++) {
         auto entry = bootboot.mmapEntry(i);
         if (entry.type() == Bootboot::mmap_entry::Free) {

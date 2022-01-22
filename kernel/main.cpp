@@ -19,19 +19,22 @@ protected:
   kernel::pmm::Allocator &allocator;
 
 public:
-  Processor(kernel::pmm::Allocator &allocator) : allocator(allocator) {}
+  constexpr Processor(kernel::pmm::Allocator &allocator)
+      : allocator(allocator) {}
   virtual void run() = 0;
 };
 
 class BootstrapProcessor : public Processor {
 
   int initialized = false;
-  u16 ncpus;
+  u16 ncpus = 1;
 
 public:
-  BootstrapProcessor(kernel::pmm::Allocator &allocator, u16 ncpus)
-      : Processor(allocator), ncpus(ncpus) {}
-  BootstrapProcessor(BootstrapProcessor &bsp) = delete;
+  constexpr BootstrapProcessor(kernel::pmm::Allocator &allocator)
+      : Processor(allocator) {}
+  BootstrapProcessor(BootstrapProcessor &) = delete;
+
+  void setNumCPUs(int n_cpus) { ncpus = n_cpus; }
 
   virtual void run() {
     kernel::platform::impl<kernel::platform::initialize>::function(
@@ -70,6 +73,7 @@ public:
     bsp.waitUntilInitialized();
     kernel::platform::impl<kernel::devices::SerialPort>::type serial;
     serial.initialize();
+
     kernel::platform::impl<kernel::platform::initialize>::function(
         this->allocator);
     format(serial, "CPU #",

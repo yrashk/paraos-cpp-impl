@@ -45,14 +45,14 @@ protected:
 
 class WatermarkAllocator : public Allocator {
 
-  void *ptr;
-  usize sz;
+  void *ptr = nullptr;
+  usize sz = 0;
   usize watermark = 0;
   libpara::sync::Lock lock;
 
 public:
-  WatermarkAllocator() {}
-  WatermarkAllocator(void *ptr, usize size) : ptr(ptr), sz(size) {}
+  constexpr WatermarkAllocator() {}
+  constexpr WatermarkAllocator(void *ptr, usize size) : ptr(ptr), sz(size) {}
 
   virtual Result<void *> allocate(usize size, usize alignment) {
     auto guard = LockGuard(lock);
@@ -76,7 +76,7 @@ template <allocator A, int sz> class ChainedAllocator : public Allocator {
   int added_allocators = 0;
 
 public:
-  ChainedAllocator() {}
+  constexpr ChainedAllocator() {}
 
   Result<int> addAllocator(A &&allocator) {
     if (added_allocators + 1 > sz) {

@@ -6,8 +6,8 @@ class Lock {
   bool locked = false;
 
 public:
-  Lock() : locked(false) {}
-  Lock(bool locked) : locked(locked) {}
+  constexpr Lock() : locked(false) {}
+  constexpr Lock(bool locked) : locked(locked) {}
 
   void lock() {
     while (__atomic_exchange_n(&locked, true, __ATOMIC_SEQ_CST) == true) {
