@@ -10,6 +10,8 @@ import kernel.platform.x86_64.port;
 using namespace libpara::err;
 using namespace libpara::basic_types;
 
+bool constinit is_initialized = false;
+
 export namespace kernel::platform::x86_64 {
 
 class SerialPort : public kernel::devices::SerialPort {
@@ -20,6 +22,10 @@ public:
 
   SerialPort() {}
   virtual Result<nullptr_t> initialize() {
+    bool initialized = false;
+    if (!__atomic_compare_exchange_n(&is_initialized, &initialized, true, false,
+                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+      return nullptr;
     port.out(1, 0x00); // Disable all interrupts
     port.out(3, 0x80); // Enable DLAB (set baud rate divisor)
     port.out(0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
