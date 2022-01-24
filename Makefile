@@ -91,9 +91,9 @@ clean:
 	rm -rf $(build) $(depdir)
 
 $(depdir): ; @mkdir -p $@/build
+$(build): ; @mkdir -p $@
 
 $(depfiles):
-
 $(mdepfiles):
 
 -include $(depfiles)
@@ -101,24 +101,11 @@ $(mdepfiles):
 
 .SECONDEXPANSION:
 
-$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d $(depdir)/$(build)/kernel.%.pcm.md Makefile 
-	@mkdir -p $(dir $@)
+$(build)/%.pcm: $$(subst .,/,%).cpp $(depdir)/$(build)/%.pcm.d $(depdir)/$(build)/%.pcm.md Makefile | $(build) 
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
-$(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile 
-	@mkdir -p $(dir $@)
+$(build)/%.o: $(build)/%.pcm Makefile | $(build)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
 
-$(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp $(depdir)/$(build)/libpara.%.pcm.d $(depdir)/$(build)/libpara.%.pcm.md Makefile
-	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
-
-$(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile
-	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
-
-$(depdir)/$(build)/kernel.%.pcm.md: kernel/$$(subst .,/,%).cpp Makefile | $(depdir)
-	@gawk '{ if (match($$0, /import\s+([a-zA-Z0-9\._]+);/, arr)) print "$(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$<)))" ": $(build)/" arr[1] ".pcm"; }' $< > $@
-
-$(depdir)/$(build)/libpara.%.pcm.md: libpara/$$(subst .,/,%).cpp Makefile | $(depdir)
+$(depdir)/$(build)/%.pcm.md: $$(subst .,/,%).cpp Makefile | $(depdir)
 	@gawk '{ if (match($$0, /import\s+([a-zA-Z0-9\._]+);/, arr)) print "$(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$<)))" ": $(build)/" arr[1] ".pcm"; }' $< > $@
