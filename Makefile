@@ -118,7 +118,7 @@ $(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
 
-$(depdir): ; @mkdir -p $@/build/kernel
+$(depdir): ; @mkdir -p $@/build
 
 $(depfiles):
 
