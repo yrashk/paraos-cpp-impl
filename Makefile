@@ -21,11 +21,11 @@ OVMF = -drive if=pflash,format=raw,readonly=on,file=support/OVMF.fd \
 
 CXX_FLAGS += -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
-	     -I libpara -Wall -Werror $(DEPFLAGS)
+	     -I libpara -Wall -Werror -mcmodel=kernel $(DEPFLAGS)
 
 ifeq ($(RELEASE),false)
   CXX_FLAGS += -g -fstack-size-section
-  PCM_CXX_FLAGS += -g -fstack-size-section
+  PCM_CXX_FLAGS += -g -fstack-size-section -mcmodel=kernel
 endif
 
 ifeq ($(RELEASE),true)
@@ -34,10 +34,7 @@ endif
 
 build = build
 
-kernel_sources = kernel/bootboot.cpp kernel/cxx.cpp kernel/ssp.cpp
-kernel_objects = $(patsubst %.cpp,$(build)/%.o,$(kernel_sources))
-
-libkernel_sources = kernel/devices/serial.cpp \
+kernel_sources = kernel/devices/serial.cpp \
 	kernel/pmm.cpp \
 	kernel/platform.cpp \
 	kernel/platform/x86_64/gdt.cpp kernel/platform/x86_64/idt.cpp \
@@ -45,9 +42,11 @@ libkernel_sources = kernel/devices/serial.cpp \
 	kernel/platform/x86_64/serial.cpp \
 	kernel/platform/x86_64/panic.cpp \
         kernel/platform/x86_64/init.cpp \
-	kernel/platform/x86_64.cpp kernel/testing.cpp kernel/main.cpp
-libkernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libkernel_sources))))
-libkernel_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libkernel_sources))))
+	kernel/platform/x86_64.cpp kernel/testing.cpp kernel/main.cpp \
+	kernel/cxx.cpp kernel/ssp.cpp kernel/bootboot.cpp
+
+kernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(kernel_sources))))
+kernel_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(kernel_sources))))
 
 libpara_sources = libpara/basic_types.cpp libpara/concepts.cpp libpara/formatting.cpp libpara/testing.cpp libpara/loop.cpp \
 		  libpara/xxh64.cpp libpara/err.cpp libpara/sync.cpp
@@ -55,20 +54,15 @@ libpara_headers = $(wildcard libpara/*.hpp)
 libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
 libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))
 
-depfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.d) $(libkernel_pcms:%.pcm=$(depdir)/%.pcm.d)
+depfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.d) $(kernel_pcms:%.pcm=$(depdir)/%.pcm.d)
 
-.SECONDARY: $(libkernel_pcms) $(libpara_pcms)
+.SECONDARY: $(kernel_pcms) $(libpara_pcms)
 
 all: $(build)/paraos
 
-$(build)/paraos: $(kernel_objects) $(kernel_sources) $(libkernel_objects) $(libpara_objects) kernel/bootboot.ld Makefile
-	$(CXX_LD) $(kernel_objects) $(libkernel_objects) $(libpara_objects) \
+$(build)/paraos: $(kernel_objects) $(libpara_objects) kernel/bootboot.ld Makefile
+	$(CXX_LD) $(kernel_objects) $(libpara_objects) \
 	-T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib
-
-$(build)/%.o: %.cpp Makefile $(libpara_pcms) $(libkernel_pcms) $(libpara_headers)
-	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) \
-	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
 $(build)/bootdisk/bootboot/x86_64: $(build)/paraos
 	mkdir -p $(build)/bootdisk/bootboot
@@ -108,10 +102,9 @@ clean:
 
 .SECONDEXPANSION:
 
-$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d Makefile | $(depdir)
+$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d $(libpara_pcms) Makefile | $(depdir)
 	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
-	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
 $(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile 
 	@mkdir -p $(dir $@)
@@ -119,8 +112,7 @@ $(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile
 
 $(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp $(depdir)/$(build)/libpara.%.pcm.d Makefile | $(depdir)
 	@mkdir -p $(dir $@)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
-	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
 $(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile
 	@mkdir -p $(dir $@)

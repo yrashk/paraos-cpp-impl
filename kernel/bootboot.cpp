@@ -1,3 +1,5 @@
+export module kernel.bootboot;
+
 import libpara.basic_types;
 import libpara.err;
 import libpara.loop;
@@ -18,7 +20,7 @@ using namespace libpara::formatting;
 
 #include <err.hpp>
 
-struct Bootboot {
+export struct Bootboot {
 
   struct mmap_entry {
     void *ptr;
@@ -69,8 +71,8 @@ struct Bootboot {
   }
 };
 
-extern Bootboot bootboot;
-extern unsigned char environment[4096];
+export extern Bootboot bootboot;
+export extern unsigned char environment[4096];
 
 bool isTesting() {
   usize i = 0;
@@ -86,7 +88,7 @@ bool isTesting() {
   }
 }
 
-extern "C" void bootboot_main() {
+export extern "C" void bootboot_main() {
   static constinit kernel::pmm::ChainedAllocator<
       kernel::pmm::WatermarkAllocator, 32>
       defaultAllocator;
