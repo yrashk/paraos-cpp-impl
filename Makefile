@@ -34,22 +34,11 @@ endif
 
 build = build
 
-kernel_sources = kernel/devices/serial.cpp \
-	kernel/pmm.cpp \
-	kernel/platform.cpp \
-	kernel/platform/x86_64/gdt.cpp kernel/platform/x86_64/idt.cpp \
-	kernel/platform/x86_64/port.cpp \
-	kernel/platform/x86_64/serial.cpp \
-	kernel/platform/x86_64/panic.cpp \
-        kernel/platform/x86_64/init.cpp \
-	kernel/platform/x86_64.cpp kernel/testing.cpp kernel/main.cpp \
-	kernel/cxx.cpp kernel/ssp.cpp kernel/bootboot.cpp
-
+kernel_sources = $(wildcard kernel/*.cpp kernel/*/*.cpp kernel/*/*/*.cpp kernel/*/*/*/*.cpp)
 kernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(kernel_sources))))
 kernel_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(kernel_sources))))
 
-libpara_sources = libpara/basic_types.cpp libpara/concepts.cpp libpara/formatting.cpp libpara/testing.cpp libpara/loop.cpp \
-		  libpara/xxh64.cpp libpara/err.cpp libpara/sync.cpp
+libpara_sources = $(wildcard libpara/*.cpp libpara/*/*.cpp libpara/*/*/*.cpp libpara/*/*/*/*.cpp)
 libpara_headers = $(wildcard libpara/*.hpp)
 libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
 libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))
@@ -59,7 +48,16 @@ mdepfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.md) $(kernel_pcms:%.pcm=$(depd
 
 .SECONDARY: $(kernel_pcms) $(libpara_pcms)
 
-all: $(build)/paraos
+.PHONY: build-with-deps mdeps all-with-deps
+
+all: build-with-deps
+all-with-deps: $(build)/paraos
+
+mdeps: $(mdepfiles)
+
+build-with-deps:
+	@$(MAKE) --no-print-directory mdeps
+	@$(MAKE) --no-print-directory all-with-deps
 
 $(build)/paraos: $(libpara_objects) $(kernel_objects) kernel/bootboot.ld Makefile
 	$(CXX_LD) $(kernel_objects) $(libpara_objects) \
@@ -130,9 +128,7 @@ $(depdir)/$(build)/kernel.%.pcm.md: kernel/$$(subst .,/,%).cpp Makefile | $(depd
 
 $(depdir)/$(build)/libpara.%.pcm.md: libpara/$$(subst .,/,%).cpp Makefile | $(depdir)
 	@gawk '{ if (match($$0, /import\s+([a-zA-Z0-9\._]+);/, arr)) print "$(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$<)))" ": $(build)/" arr[1] ".pcm"; }' $< > $@
- 
+
 
 include $(wildcard $(depfiles))
 include $(wildcard $(mdepfiles))
-
-.ONESHELL:

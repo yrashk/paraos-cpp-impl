@@ -16,4 +16,4 @@ jobs:
       - name: Set up QEMU & Clang
         run: apt update && apt install -y qemu qemu-system-x86 clang-13 make gawk
       - name: Test
-        run: make test CXX=clang++-13
+        run: make CXX=clang++-13 && make test CXX=clang++-13
