@@ -21,7 +21,7 @@ OVMF = -drive if=pflash,format=raw,readonly=on,file=support/OVMF.fd \
 
 CXX_FLAGS += -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
-	     -I libpara -Wall -Werror -mcmodel=kernel $(DEPFLAGS)
+	     -I libpara -Wall -Werror $(DEPFLAGS)
 
 ifeq ($(RELEASE),false)
   CXX_FLAGS += -g -fstack-size-section
