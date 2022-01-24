@@ -1,3 +1,6 @@
+depdir := .deps
+DEPFLAGS = -MT $@ -MMD -MP -MF $(depdir)/$@.d
+
 # By default, don't build a release
 RELEASE ?= false
 
@@ -18,7 +21,7 @@ OVMF = -drive if=pflash,format=raw,readonly=on,file=support/OVMF.fd \
 
 CXX_FLAGS += -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
-	     -I libpara -Wall -Werror
+	     -I libpara -Wall -Werror $(DEPFLAGS)
 
 ifeq ($(RELEASE),false)
   CXX_FLAGS += -g -fstack-size-section
@@ -52,12 +55,11 @@ libpara_headers = $(wildcard libpara/*.hpp)
 libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
 libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))
 
+depfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.d) $(libkernel_pcms:%.pcm=$(depdir)/%.pcm.d)
+
 .SECONDARY: $(libkernel_pcms) $(libpara_pcms)
 
 all: $(build)/paraos
-
-check:
-	@echo $(libkernel_pcms)
 
 $(build)/paraos: $(kernel_objects) $(kernel_sources) $(libkernel_objects) $(libpara_objects) kernel/bootboot.ld Makefile
 	$(CXX_LD) $(kernel_objects) $(libkernel_objects) $(libpara_objects) \
@@ -102,26 +104,32 @@ test-gdb: $(build)/bootdisk_test/bootboot/x86_64
 	exit $$(($$EXIT_CODE >> 1)) 
 
 clean:
-	rm -rf $(build)
+	rm -rf $(build) $(depdir)
 
 .SECONDEXPANSION:
 
-$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp Makefile $(libpara_pcms) $(libpara_sources) $(libpara_headers)
+$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d Makefile | $(depdir)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
 	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
-$(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile $(libpara_pcms) $(libpara_sources) $(libpara_headers)
+$(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile 
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
 
-$(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp Makefile $(libpara_headers)
+$(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp $(depdir)/$(build)/libpara.%.pcm.d Makefile | $(depdir)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface \
 	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
-$(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile $(libpara_headers)
+$(build)/libpara.%.o: $(build)/libpara.%.pcm Makefile
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
+
+$(depdir): ; @mkdir -p $@/build/kernel
+
+$(depfiles):
+
+include $(wildcard $(depfiles))
 
 .ONESHELL:

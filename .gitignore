@@ -1,3 +1,4 @@
+.deps
 .DS_Store
 tools/mkbootimg/mkbootimg
 tools/mkbootimg/*.tmp
