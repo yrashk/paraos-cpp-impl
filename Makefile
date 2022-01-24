@@ -60,7 +60,7 @@ depfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.d) $(kernel_pcms:%.pcm=$(depdir
 
 all: $(build)/paraos
 
-$(build)/paraos: $(kernel_objects) $(libpara_objects) kernel/bootboot.ld Makefile
+$(build)/paraos: $(libpara_objects) $(kernel_objects) kernel/bootboot.ld Makefile
 	$(CXX_LD) $(kernel_objects) $(libpara_objects) \
 	-T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib
 
@@ -102,7 +102,7 @@ clean:
 
 .SECONDEXPANSION:
 
-$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d $(libpara_pcms) Makefile | $(depdir)
+$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d Makefile | $(depdir)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
