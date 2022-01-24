@@ -7,7 +7,9 @@ import libpara.concepts;
 import libpara.formatting;
 import kernel.main;
 import kernel.pmm;
+#ifndef RELEASE
 import kernel.testing;
+#endif
 import kernel.devices.serial;
 import kernel.platform;
 import kernel.platform.x86_64;
@@ -74,6 +76,7 @@ export struct Bootboot {
 export extern Bootboot bootboot;
 export extern unsigned char environment[4096];
 
+#ifndef RELEASE
 bool isTesting() {
   usize i = 0;
   while (true) {
@@ -87,6 +90,7 @@ bool isTesting() {
     i++;
   }
 }
+#endif
 
 export extern "C" void bootboot_main() {
   static constinit kernel::pmm::ChainedAllocator<
@@ -95,34 +99,34 @@ export extern "C" void bootboot_main() {
 
   static constinit auto bsp = kernel::BootstrapProcessor(defaultAllocator);
 
+#ifndef RELEASE
   if (isTesting()) {
     if (bootboot.isBootstrapCPU()) {
       kernel::testing::run();
     }
     kernel::platform::impl<kernel::platform::halt>::function();
-  } else {
-    if (bootboot.isBootstrapCPU()) {
-      bsp.setNumCPUs(bootboot.numCores());
+  }
+#endif
+  if (bootboot.isBootstrapCPU()) {
+    bsp.setNumCPUs(bootboot.numCores());
 
-      for (u32 i = 0; i < bootboot.mmapEntries(); i++) {
-        auto entry = bootboot.mmapEntry(i);
-        if (entry.type() == Bootboot::mmap_entry::Free) {
-          tryCatch(
-              defaultAllocator.addAllocator(
-                  kernel::pmm::WatermarkAllocator(entry.ptr, entry.size())),
-              err, ({
-                kernel::platform::impl<kernel::devices::SerialPort>::type
-                    serial;
-                serial.initialize();
-                format(serial, "Uncaught error while preparing PMM: ", err.name,
-                       "\n");
-                0;
-              }));
-        }
+    for (u32 i = 0; i < bootboot.mmapEntries(); i++) {
+      auto entry = bootboot.mmapEntry(i);
+      if (entry.type() == Bootboot::mmap_entry::Free) {
+        tryCatch(
+            defaultAllocator.addAllocator(
+                kernel::pmm::WatermarkAllocator(entry.ptr, entry.size())),
+            err, ({
+              kernel::platform::impl<kernel::devices::SerialPort>::type serial;
+              serial.initialize();
+              format(serial, "Uncaught error while preparing PMM: ", err.name,
+                     "\n");
+              0;
+            }));
       }
-      bsp.start();
-    } else {
-      kernel::ApplicationProcessor(defaultAllocator, bsp).start();
     }
+    bsp.start();
+  } else {
+    kernel::ApplicationProcessor(defaultAllocator, bsp).start();
   }
 }
