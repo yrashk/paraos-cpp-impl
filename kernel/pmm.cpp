@@ -139,13 +139,6 @@ Result<T *> allocate(A &allocator,
       tryUnwrap(allocator.allocate(sizeof(T), alignment)));
 }
 
-template <typename T>
-Result<T *> allocate(Allocator &allocator,
-                     decltype(alignof(T)) alignment = alignof(T)) {
-  auto allocation = tryUnwrap(allocator.allocate(sizeof(T), alignment));
-  return reinterpret_cast<T *>(allocation);
-}
-
 } // namespace kernel::pmm
 
 #include <testing.hpp>
