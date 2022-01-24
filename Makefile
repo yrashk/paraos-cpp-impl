@@ -55,6 +55,7 @@ libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pc
 libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))
 
 depfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.d) $(kernel_pcms:%.pcm=$(depdir)/%.pcm.d)
+mdepfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.md) $(kernel_pcms:%.pcm=$(depdir)/%.pcm.md)
 
 .SECONDARY: $(kernel_pcms) $(libpara_pcms)
 
@@ -102,7 +103,7 @@ clean:
 
 .SECONDEXPANSION:
 
-$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d Makefile | $(depdir)
+$(build)/kernel.%.pcm: kernel/$$(subst .,/,%).cpp $(depdir)/$(build)/kernel.%.pcm.d $(depdir)/$(build)/kernel.%.pcm.md Makefile | $(depdir)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
@@ -110,7 +111,7 @@ $(build)/kernel.%.o: $(build)/kernel.%.pcm Makefile
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_CXX_FLAGS)
 
-$(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp $(depdir)/$(build)/libpara.%.pcm.d Makefile | $(depdir)
+$(build)/libpara.%.pcm: libpara/$$(subst .,/,%).cpp $(depdir)/$(build)/libpara.%.pcm.d $(depdir)/$(build)/libpara.%.pcm.md Makefile | $(depdir)
 	@mkdir -p $(dir $@)
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
@@ -122,6 +123,16 @@ $(depdir): ; @mkdir -p $@/build
 
 $(depfiles):
 
+$(mdepfiles):
+
+$(depdir)/$(build)/kernel.%.pcm.md: kernel/$$(subst .,/,%).cpp Makefile | $(depdir)
+	@gawk '{ if (match($$0, /import\s+([a-zA-Z0-9\._]+);/, arr)) print "$(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$<)))" ": $(build)/" arr[1] ".pcm"; }' $< > $@
+
+$(depdir)/$(build)/libpara.%.pcm.md: libpara/$$(subst .,/,%).cpp Makefile | $(depdir)
+	@gawk '{ if (match($$0, /import\s+([a-zA-Z0-9\._]+);/, arr)) print "$(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$<)))" ": $(build)/" arr[1] ".pcm"; }' $< > $@
+ 
+
 include $(wildcard $(depfiles))
+include $(wildcard $(mdepfiles))
 
 .ONESHELL:
