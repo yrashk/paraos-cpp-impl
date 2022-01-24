@@ -10,15 +10,19 @@ else
   CXX_LD ?= ld
 endif
 
-QEMU_PARAMS = -cpu max -serial stdio -smp 2
+QEMU_SMP ?= 2
+QEMU_PARAMS = -cpu max -serial mon:stdio -machine q35 -smp $(QEMU_SMP)
+
+OVMF = -drive if=pflash,format=raw,readonly=on,file=support/OVMF.fd \
+       -drive if=pflash,format=raw,readonly=off,file=support/OVMF_VARS.fd
 
 CXX_FLAGS += -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
-	     -fpic -fno-stack-protector -mno-red-zone --std=c++20 \
+	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
 	     -I libpara -Wall -Werror
 
 ifeq ($(RELEASE),false)
-  CXX_FLAGS += -g
-  PCM_CXX_FLAGS += -g
+  CXX_FLAGS += -g -fstack-size-section
+  PCM_CXX_FLAGS += -g -fstack-size-section
 endif
 
 ifeq ($(RELEASE),true)
@@ -27,7 +31,7 @@ endif
 
 build = build
 
-kernel_sources = kernel/bootboot.cpp kernel/cxx.cpp
+kernel_sources = kernel/bootboot.cpp kernel/cxx.cpp kernel/ssp.cpp
 kernel_objects = $(patsubst %.cpp,$(build)/%.o,$(kernel_sources))
 
 libkernel_sources = kernel/devices/serial.cpp \
@@ -50,7 +54,7 @@ libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$
 
 .SECONDARY: $(libkernel_pcms) $(libpara_pcms)
 
-all: $(build)/boot.img
+all: $(build)/paraos
 
 check:
 	@echo $(libkernel_pcms)
@@ -64,39 +68,41 @@ $(build)/%.o: %.cpp Makefile $(libpara_pcms) $(libkernel_pcms) $(libpara_headers
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(CXX_FLAGS) \
 	-fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
-$(build)/boot.img: $(build)/paraos tools/mkbootimg/mkbootimg boot.config bootimage.json
-	tools/mkbootimg/mkbootimg check $<
-	tools/mkbootimg/mkbootimg bootimage.json $@
+$(build)/bootdisk/bootboot/x86_64: $(build)/paraos
+	mkdir -p $(build)/bootdisk/bootboot
+	cp support/bootboot.efi $(build)/bootdisk/bootboot.efi
+	echo "BOOTBOOT.EFI" > $(build)/bootdisk/startup.nsh
+	cp $(build)/paraos $(build)/bootdisk/bootboot/x86_64
 
-$(build)/boot_test.img: $(build)/paraos tools/mkbootimg/mkbootimg boot_test.config bootimage_test.json
-	tools/mkbootimg/mkbootimg check $<
-	tools/mkbootimg/mkbootimg bootimage_test.json $@
+qemu: $(build)/bootdisk/bootboot/x86_64
+	qemu-system-x86_64 $(OVMF) \
+	-drive format=raw,file=fat:rw:$(build)/bootdisk $(QEMU_PARAMS) -s
 
-tools/mkbootimg/mkbootimg: $(filter-out tools/mkbootimg/mkbootimg,$(wildcard tools/mkbootimg/*.*))
-	$(MAKE) -C tools/mkbootimg
-	rm -f tools/mkbootimg*.zip	
+qemu-dbg: $(build)/bootdisk/bootboot/x86_64
+	qemu-system-x86_64 $(OVMF) \
+	-drive format=raw,file=fat:rw:$(build)/bootdisk $(QEMU_PARAMS) -s -S
 
-qemu: $(build)/boot.img
-	qemu-system-x86_64 -drive format=raw,file=$< $(QEMU_PARAMS)
+$(build)/bootdisk_test/bootboot/x86_64: $(build)/paraos
+	mkdir -p $(build)/bootdisk_test/bootboot
+	cp support/bootboot.efi $(build)/bootdisk_test/bootboot.efi
+	echo "BOOTBOOT.EFI" > $(build)/bootdisk_test/startup.nsh
+	echo "test=yes" >> $(build)/bootdisk_test/bootboot/config
+	cp $(build)/paraos $(build)/bootdisk_test/bootboot/x86_64
  
-qemu-gdb: $(build)/boot.img
-	qemu-system-x86_64 --drive format=raw,file=$< $(QEMU_PARAMS) -S -s
-
-test: $(build)/boot_test.img
-	qemu-system-x86_64 -drive format=raw,file=$< $(QEMU_PARAMS) -no-reboot -device isa-debug-exit ;\
+test: $(build)/bootdisk_test/bootboot/x86_64
+	qemu-system-x86_64 -nographic $(OVMF) \
+	-drive format=raw,file=fat:rw:$(build)/bootdisk_test $(QEMU_PARAMS) -no-reboot -s -device isa-debug-exit ;\
 	EXIT_CODE=$$?  ;\
 	exit $$(($$EXIT_CODE >> 1)) 
 
-test-gdb: $(build)/boot_test.img
-	qemu-system-x86_64 -drive format=raw,file=$< $(QEMU_PARAMS) -no-reboot -device isa-debug-exit -S -s ;\
+test-gdb: $(build)/bootdisk_test/bootboot/x86_64
+	qemu-system-x86_64 -nographic $(OVMF) \
+	-drive format=raw,file=fat:rw:$(build)/bootdisk_test $(QEMU_PARAMS) -no-reboot -s -S -device isa-debug-exit ;\
 	EXIT_CODE=$$?  ;\
 	exit $$(($$EXIT_CODE >> 1)) 
 
 clean:
 	rm -rf $(build)
-
-deepclean: clean
-	$(MAKE) -C tools/mkbootimg clean
 
 .SECONDEXPANSION:
 
