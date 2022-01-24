@@ -34,9 +34,11 @@ cxx_flags += $(CXX_FLAGS) -ffreestanding -nostdlib -nostdinc -fno-exceptions -fn
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
 	     -I libpara -Wall -Werror $(depflags)
 
+pcm_cxx_flags +=  -mcmodel=kernel
+
 ifeq ($(RELEASE),false)
   cxx_flags += -g -fstack-size-section
-  PCM_cxx_flags += -g -fstack-size-section -mcmodel=kernel
+  pcm_cxx_flags += -g -fstack-size-section
 endif
 
 ifeq ($(RELEASE),true)
@@ -116,7 +118,7 @@ $(build)/%.pcm: $$(subst .,/,%).cpp $(depdir)/$(build)/%.pcm.d $(depdir)/$(build
 	$(CXX) -target x86_64-unknown -c $< -o $@ $(cxx_flags) -Xclang -emit-module-interface -fimplicit-modules -fimplicit-module-maps -fprebuilt-module-path=$(build)
 
 $(build)/%.o: $(build)/%.pcm Makefile | $(build)
-	$(CXX) -target x86_64-unknown -c $< -o $@ $(PCM_cxx_flags)
+	$(CXX) -target x86_64-unknown -c $< -o $@ $(pcm_cxx_flags)
 
 $(depdir)/$(build)/%.pcm.md: $$(subst .,/,%).cpp Makefile | $(depdir)
 	@gawk '{ if (match($$0, /import\s+([a-zA-Z0-9\._]+);/, arr)) print "$(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$<)))" ": $(build)/" arr[1] ".pcm"; }' $< > $@
