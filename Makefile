@@ -15,6 +15,10 @@ CXX_FLAGS +=
 
 ##
 
+COMPONENTS = libpara kernel
+
+##
+
 depdir := .deps
 depflags = -MT $@ -MMD -MP -MF $(depdir)/$@.d
 
@@ -32,7 +36,7 @@ ovmf = -drive if=pflash,format=raw,readonly=on,file=support/OVMF.fd \
 
 cxx_flags += $(CXX_FLAGS) -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
-	     -I libpara -Wall -Werror $(depflags)
+	     $(includes) -Wall -Werror $(depflags)
 
 pcm_cxx_flags +=  -mcmodel=kernel
 
@@ -47,24 +51,26 @@ endif
 
 build = build
 
-kernel_sources = $(wildcard kernel/*.cpp kernel/*/*.cpp kernel/*/*/*.cpp kernel/*/*/*/*.cpp)
-kernel_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(kernel_sources))))
-kernel_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(kernel_sources))))
+define component
+$(1)_sources = $$(wildcard $(1)/*.cpp $(1)/*/*.cpp $(1)/*/*/*.cpp $(1)/*/*/*/*.cpp)
+$(1)_pcms = $$(patsubst %.pcm,$(build)/%.pcm,$$(subst /,.,$$(patsubst %.cpp,%.pcm,$$($(1)_sources))))
+$(1)_objects = $$(patsubst %.o,$(build)/%.o,$$(subst /,.,$$(patsubst %.cpp,%.o,$$($(1)_sources))))
 
-libpara_sources = $(wildcard libpara/*.cpp libpara/*/*.cpp libpara/*/*/*.cpp libpara/*/*/*/*.cpp)
-libpara_headers = $(wildcard libpara/*.hpp)
-libpara_pcms = $(patsubst %.pcm,$(build)/%.pcm,$(subst /,.,$(patsubst %.cpp,%.pcm,$(libpara_sources))))
-libpara_objects = $(patsubst %.o,$(build)/%.o,$(subst /,.,$(patsubst %.cpp,%.o,$(libpara_sources))))
+.SECONDARY: $$($(1)_pcms)
+depfiles += $$($(1)_pcms:%.pcm=$(depdir)/%.pcm.d)
+mdepfiles += $$($(1)_pcms:%.pcm=$(depdir)/%.pcm.md)
 
-depfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.d) $(kernel_pcms:%.pcm=$(depdir)/%.pcm.d)
-mdepfiles := $(libpara_pcms:%.pcm=$(depdir)/%.pcm.md) $(kernel_pcms:%.pcm=$(depdir)/%.pcm.md)
+includes += -I $(1)
 
-.SECONDARY: $(kernel_pcms) $(libpara_pcms)
+all_objects += $$($(1)_objects)
+endef
+
+$(foreach c,$(COMPONENTS),$(eval $(call component,$(c))))
 
 all: $(build)/paraos
 
-$(build)/paraos: $(libpara_objects) $(kernel_objects) kernel/bootboot.ld Makefile
-	$(cxx_ld) $(kernel_objects) $(libpara_objects) \
+$(build)/paraos: $(all_objects) kernel/bootboot.ld Makefile
+	$(cxx_ld) $(all_objects) \
 	-T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib
 
 $(build)/bootdisk/bootboot/x86_64: $(build)/paraos
