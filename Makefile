@@ -27,8 +27,8 @@ endif
 
 qemu_params = -cpu max -serial mon:stdio -machine q35 -smp $(QEMU_SMP) $(QEMU_OPTS)
 
-ovmf = -drive if=pflash,format=raw,readonly=on,file=support/ovmf.fd \
-       -drive if=pflash,format=raw,readonly=off,file=support/ovmf_VARS.fd
+ovmf = -drive if=pflash,format=raw,readonly=on,file=support/OVMF.fd \
+       -drive if=pflash,format=raw,readonly=off,file=support/OVMF_VARS.fd
 
 cxx_flags += $(CXX_FLAGS) -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
