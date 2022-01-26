@@ -14,6 +14,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up QEMU & Clang
-        run: apt update && apt install -y qemu qemu-system-x86 clang-13 make gawk
+        run: apt update && apt install -y qemu qemu-system-x86 clang-13 lld-13 make gawk
       - name: Test
-        run: make test CXX=clang++-13
+        run: make test CXX=clang++-13 CXX_LD=ld.lld-13

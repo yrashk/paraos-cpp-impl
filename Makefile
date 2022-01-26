@@ -12,6 +12,8 @@ QEMU_OPTS ?=
 QEMU ?= qemu-system-x86_64
 # Extra C++ compile flags
 CXX_FLAGS +=
+# Linker (must be LLVM's LLD)
+CXX_LD ?= ld.lld
 
 ##
 
@@ -22,12 +24,6 @@ COMPONENTS = libpara kernel
 depdir := .deps
 depflags = -MT $@ -MMD -MP -MF $(depdir)/$@.d
 
-uname_s := $(shell uname -s)
-ifeq ($(uname_s),Darwin)
-  cxx_ld ?= ld.lld
-else
-  cxx_ld ?= ld
-endif
 
 qemu_params = -cpu max -serial mon:stdio -machine q35 -smp $(QEMU_SMP) $(QEMU_OPTS)
 
@@ -70,7 +66,7 @@ $(foreach c,$(COMPONENTS),$(eval $(call component,$(c))))
 all: $(build)/paraos
 
 $(build)/paraos: $(all_objects) kernel/bootboot.ld Makefile
-	$(cxx_ld) $(all_objects) \
+	$(CXX_LD) $(all_objects) \
 	-T kernel/bootboot.ld -o $@ -e bootboot_main -nostdlib
 
 $(build)/bootdisk/bootboot/x86_64: $(build)/paraos
