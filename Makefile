@@ -38,7 +38,7 @@ cxx_flags += $(CXX_FLAGS) -ffreestanding -nostdlib -nostdinc -fno-exceptions -fn
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
 	     $(includes) -Wall -Werror $(depflags)
 
-pcm_cxx_flags +=  -mcmodel=kernel
+pcm_cxx_flags +=  -mcmodel=kernel -Wno-unused-command-line-argument
 
 ifeq ($(RELEASE),false)
   cxx_flags += -g -fstack-size-section
