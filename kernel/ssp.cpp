@@ -14,7 +14,7 @@ import kernel.platform.x86_64.serial;
 using namespace libpara::basic_types;
 using namespace libpara::formatting;
 
-export constinit usize __stack_chk_guard =
+export constinit __attribute__((used)) usize __stack_chk_guard =
     sizeof(usize) == 8 ? 0x595e9fbd94fda766 : 0xe2dee396;
 
 export extern "C" __attribute__((noreturn)) void __stack_chk_fail(void) {

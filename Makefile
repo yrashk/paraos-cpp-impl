@@ -36,9 +36,9 @@ ovmf = -drive if=pflash,format=raw,readonly=on,file=support/OVMF.fd \
 
 cxx_flags += $(CXX_FLAGS) -ffreestanding -nostdlib -nostdinc -fno-exceptions -fno-rtti \
 	     -fpic -fstack-protector-all -mno-red-zone --std=c++20 \
-	     $(includes) -Wall -Werror $(depflags)
+	     $(includes) -Wall -Werror -flto=thin $(depflags)
 
-pcm_cxx_flags +=  -mcmodel=kernel -Wno-unused-command-line-argument
+pcm_cxx_flags +=  -mcmodel=kernel -Wno-unused-command-line-argument -flto=thin
 
 ifeq ($(RELEASE),false)
   cxx_flags += -g -fstack-size-section
