@@ -5,7 +5,6 @@ import libpara.basic_types;
 import libpara.loop;
 
 import kernel.pmm;
-import kernel.platform.x86_64.serial;
 import kernel.platform.x86_64.panic;
 import kernel.platform.x86_64.gdt;
 import kernel.platform.x86_64.idt;

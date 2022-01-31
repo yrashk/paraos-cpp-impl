@@ -1,7 +1,7 @@
 export module libpara.formatting;
 
 import libpara.basic_types;
-import libpara.concepts;
+export import libpara.concepts;
 
 using namespace libpara::basic_types;
 using namespace libpara;

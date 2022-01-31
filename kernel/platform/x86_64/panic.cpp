@@ -2,7 +2,7 @@ export module kernel.platform.x86_64.panic;
 
 import libpara.basic_types;
 import kernel.devices.serial;
-import kernel.platform.x86_64.serial;
+export import kernel.platform.x86_64.serial;
 
 using namespace libpara::basic_types;
 

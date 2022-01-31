@@ -1,7 +1,5 @@
 export module kernel.pmm;
 
-import libpara.concepts;
-import libpara.formatting;
 import libpara.err;
 import libpara.basic_types;
 import libpara.sync;

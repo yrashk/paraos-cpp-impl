@@ -4,12 +4,10 @@ export module kernel.ssp;
 
 import libpara.basic_types;
 import libpara.formatting;
-import libpara.concepts;
 
 import kernel.devices.serial;
 import kernel.platform;
 import kernel.platform.x86_64;
-import kernel.platform.x86_64.serial;
 
 using namespace libpara::basic_types;
 using namespace libpara::formatting;

@@ -2,8 +2,6 @@ export module kernel.bootboot;
 
 import libpara.basic_types;
 import libpara.err;
-import libpara.loop;
-import libpara.concepts;
 import libpara.formatting;
 import kernel.main;
 import kernel.pmm;
@@ -13,8 +11,6 @@ import kernel.testing;
 import kernel.devices.serial;
 import kernel.platform;
 import kernel.platform.x86_64;
-import kernel.platform.x86_64.serial;
-import kernel.platform.x86_64.init;
 
 using namespace libpara::basic_types;
 using namespace libpara::err;

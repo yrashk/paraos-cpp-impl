@@ -7,6 +7,7 @@ import kernel.platform;
 import kernel.pmm;
 import kernel.platform.x86_64.init;
 import kernel.platform.x86_64.panic;
+export import kernel.platform.x86_64.serial;
 
 using namespace libpara::basic_types;
 using namespace libpara::err;

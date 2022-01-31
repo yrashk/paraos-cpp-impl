@@ -8,7 +8,6 @@ import kernel.pmm;
 import kernel.devices.serial;
 import kernel.platform;
 import kernel.platform.x86_64;
-import kernel.platform.x86_64.serial;
 
 using namespace libpara::basic_types;
 
